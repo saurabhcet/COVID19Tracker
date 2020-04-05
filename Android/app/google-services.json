@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "885144498796",
+    "firebase_url": "https://covidtracker-aede6.firebaseio.com",
+    "project_id": "covidtracker-aede6",
+    "storage_bucket": "covidtracker-aede6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885144498796:android:168fbfdfb28934b7601e49",
+        "android_client_info": {
+          "package_name": "com.covid.covidtracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "885144498796-0timsam9t1u3nfajtvkbmei3e622jqsr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwnbVCw4Uy6HJqDLKbjWG5jR_yrG09D0w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "885144498796-0timsam9t1u3nfajtvkbmei3e622jqsr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,32 @@
+<resources>
+    <string name="app_name">COVID19 Tracker</string>
+    <string name="title_activity_maps">COVID19 Tracker</string>
+    <string name="state">MH</string>
+    <string name="pin_code">400059</string>
+    <string name="v_token">CG-MH-400059-4444555566667777</string>
+    <string name="enter_detection_category">Enter COVID Detection(eg. CR, CO, CY or CG)</string>
+    <string name="enter_state">Enter State(eg. MH)</string>
+    <string name="enter_pin">Enter PIN Code</string>
+    <string name="enter_virtual_token">Token is Auto-generated or enter(eg. Aadhaar Virtual token) </string>
+    <string name="test_email">dummy</string>
+    <string name="test_password">dummy</string>
+    <string name="submit">Tag Me</string>
+
+    <string
+        name="location_suspect_notification">If you want to receive notification about nearby COVID suspect, please grant permission to location services.</string>
+    <string name="missing_inputs">Please enter a transport ID, email and password</string>
+    <string name="tracking">Tracking &#x2713;</string>
+    <string name="not_tracking">Not tracking &#x2718;</string>
+    <string name="connecting">Connecting &#8230;</string>
+    <string name="status">status</string>
+    <string name="location_permission_required">Location permission required.</string>
+    <string name="gps_required">Gps not enabled.</string>
+    <string name="ok">OK</string>
+    <string name="enable">Enable</string>
+    <string name="auth_failed">Authentication failed</string>
+    <string name="tag_failed">Invalid entry, tagging failed</string>
+    <string name="confirm_stop">Do you really want to disable location tracking?</string>
+
+    <string name="firebase_path" translatable="false">locations/</string>
+    <string name="prefs" translatable="false">prefs</string>
+</resources>
