@@ -1,0 +1,2 @@
+# COVID19Tracker
+ 	The very proposed idea is for not mass surveillance but to take timely measures. 	 Public will get LIVE notification about the DETECED and SUSPECTED person around to be safe. 	A Person can voluntarily TAG himself just to help the community if he/she is being suggested for quarantine. 	 A Person can be TAGGED by the Authorities and can be reached out in case of emergencies.  
