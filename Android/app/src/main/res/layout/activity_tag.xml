@@ -7,25 +7,49 @@
     android:layout_height="match_parent"
     tools:context=".TagActivity">
 
-    <EditText
+    <Spinner
         android:id="@+id/covid_code"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:backgroundTint="@color/colorPrimary"
+        android:layout_marginTop="15dp"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
         android:hint="@string/enter_detection_category"
+        android:prompt="@string/enter_detection_category"
         android:maxLines="1"
         android:textColor="@color/colorPrimary"
         android:textColorHighlight="@color/colorPrimary" />
 
-    <EditText
+    <Spinner
         android:id="@+id/state"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
         android:layout_below="@+id/covid_code"
+        android:backgroundTint="@color/colorPrimary"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="15dp"
+        android:hint="@string/enter_detection_category"
+        android:prompt="@string/enter_state"
+        android:maxLines="1"
+        android:textColor="@color/colorPrimary"
+        android:textColorHighlight="@color/colorPrimary" />
+
+    <Spinner
+        android:id="@+id/quarantine_period"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/state"
         android:layout_centerHorizontal="true"
         android:backgroundTint="@color/colorPrimary"
-        android:hint="@string/enter_state"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="15dp"
+        android:hint="@string/enter_detection_category"
+        android:prompt="@string/enter_virtual_token"
         android:maxLines="1"
         android:textColor="@color/colorPrimary"
         android:textColorHighlight="@color/colorPrimary" />
@@ -34,9 +58,12 @@
         android:id="@+id/pin_code"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/state"
+        android:layout_below="@+id/quarantine_period"
         android:layout_centerHorizontal="true"
         android:backgroundTint="@color/colorPrimary"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="15dp"
         android:hint="@string/enter_pin"
         android:maxLines="1"
         android:textColor="@color/colorPrimary"
@@ -49,22 +76,34 @@
         android:layout_below="@+id/pin_code"
         android:layout_centerHorizontal="true"
         android:backgroundTint="@color/colorPrimary"
+        android:layout_marginLeft="15dp"
+        android:layout_marginRight="15dp"
+        android:layout_marginTop="15dp"
         android:hint="@string/enter_virtual_token"
         android:maxLines="1"
         android:textColor="@color/colorPrimary"
         android:textColorHighlight="@color/colorPrimary" />
 
+    <CheckBox
+        android:id="@+id/agreement"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="15dp"
+        android:text="@string/agreement"
+        android:layout_below="@+id/virtual_token" />
+
     <Button
         android:id="@+id/registerButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/agreement"
         android:layout_gravity="start"
-        android:layout_below="@+id/virtual_token"
         android:layout_marginStart="48dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="25dp"
         android:layout_marginEnd="48dp"
         android:layout_marginBottom="64dp"
         android:enabled="true"
-        android:text="Tag" />
+        android:text="TAG" />
 
 </RelativeLayout>

@@ -2,19 +2,19 @@ package com.covid.covidtracker;
 
 public class QuarantinePeriod {
 
-    private String id;
+    private int id;
     private String name;
 
-    QuarantinePeriod(String id, String name) {
+    QuarantinePeriod(int id, String name) {
         this.id = id;
         this.name = name;
     }
 
-    private String getId() {
+    int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 

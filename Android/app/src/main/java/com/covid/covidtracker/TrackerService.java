@@ -35,7 +35,6 @@ import com.google.firebase.BuildConfig;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -59,7 +58,6 @@ public class TrackerService extends Service implements LocationListener {
     private DatabaseReference dbRef;
     private FirebaseRemoteConfig remoteConfig;
     private LinkedList<Map<String, Object>> personStatuses = new LinkedList<>();
-    //private LinkedList<Map<String, Location>> personStatuses = new LinkedList<>();
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder mNotificationBuilder;
     private PowerManager.WakeLock mWakelock;
@@ -88,42 +86,16 @@ public class TrackerService extends Service implements LocationListener {
     }
 
     @Override
-    public void onLocationChanged(Location location) {
-        Log.i(TAG, "onLocationChanged: ");
-        Map<String, Object> personStatus = new HashMap<>();
-        personStatus.put("latitude", location.getLatitude());
-        personStatus.put("longitude", location.getLongitude());
-        personStatus.put("time", new Date().getTime());
-
-        if (locationIsAtStatus(location, 1) && locationIsAtStatus(location, 0)) {
-            // If the most recent two statuses are approximately at the same
-            // location as the new current location, rather than adding the new
-            // location, we update the latest status with the current. Two statuses
-            // are kept when the locations are the same, the earlier representing
-            // the time the location was arrived at, and the latest representing the
-            // current time.
-            personStatuses.set(0, personStatus);
-            // Only need to update 0th status, so we can save bandwidth.
-            dbRef.child("0").setValue(personStatus);
-        } else {
-            // Maintain a fixed number of previous statuses.
-            while (personStatuses.size() >= remoteConfig.getLong("MAX_STATUSES")) {
-                personStatuses.removeLast();
-            }
-            personStatuses.addFirst(personStatus);
-            // We push the entire list at once since each key/index changes, to
-            // minimize network requests.
-            dbRef.setValue(personStatuses);
+    public void onDestroy() {
+        // Set activity title to not tracking.
+        setStatusMessage(R.string.not_tracking);
+        // Stop the persistent notification.
+        mNotificationManager.cancel(NOTIFICATION_ID);
+        // Release the wakelock
+        if (mWakelock != null) {
+            mWakelock.release();
         }
-
-        if (BuildConfig.DEBUG) {
-            //logStatusToStorage(personStatus);
-        }
-
-        NetworkInfo info = ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE))
-                .getActiveNetworkInfo();
-        boolean connected = info != null && info.isConnectedOrConnecting();
-        setStatusMessage(connected ? R.string.tracking : R.string.not_tracking);
+        super.onDestroy();
     }
 
     @Override
@@ -150,9 +122,9 @@ public class TrackerService extends Service implements LocationListener {
                         Log.i(TAG, "authenticate: " + task.isSuccessful());
                         if (task.isSuccessful()) {
                             fetchRemoteConfig();
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            String uid = user.getUid();
-                            loadPreviousStatuses(uid);
+                            //FirebaseUser user = mAuth.getCurrentUser();
+                            //String uid = user.getUid();
+                            loadPreviousStatuses();
                         } else {
                             Toast.makeText(TrackerService.this, R.string.auth_failed, Toast.LENGTH_SHORT).show();
                             stopSelf();
@@ -176,23 +148,38 @@ public class TrackerService extends Service implements LocationListener {
      * Loads previously stored statuses from Firebase, and once retrieved,
      * start location tracking.
      */
-    private void loadPreviousStatuses(String uid) {
+    private void loadPreviousStatuses() {
         final String token = prefs.getString(getString(R.string.v_token), "");
-        FirebaseAnalytics.getInstance(this).setUserProperty("COVIDDetection", token);
-        final String path = getString(R.string.firebase_path) + token;
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        dbRef = database.getReference(path);
-        LocationRequest request = new LocationRequest();
-        //Specify how often your app should request the device’s location//
-        request.setInterval(remoteConfig.getLong("LOCATION_REQUEST_INTERVAL"));
-        request.setFastestInterval(remoteConfig.getLong("LOCATION_REQUEST_INTERVAL_FASTEST"));
+        final String state = prefs.getString(getString(R.string.v_state), "");
+        final String pin = prefs.getString(getString(R.string.v_pin), "");
+        final long expiry = prefs.getLong(getString(R.string.v_expiry), 0);
+        final int registrationCnt = prefs.getInt(getString(R.string.v_registered), 0);
 
+        final String path = getString(R.string.firebase_path) + state + "/" + pin + "/" + token;
+
+        FirebaseAnalytics.getInstance(this).setUserProperty("COVIDDetection", token);
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        dbRef = database.getReference(path + "/" + getString(R.string.firebase_path_registration));
+
+        Map<String, Object> registration = new HashMap<>();
+        registration.put("token", token);
+        registration.put("state", state);
+        registration.put("pin", pin);
+        registration.put("time", new Date().getTime());
+        registration.put("expTime", expiry);
+        dbRef.child(Integer.toString(registrationCnt)).setValue(registration);
+
+        dbRef = database.getReference(path);
         dbRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
                 if (snapshot != null) {
-                    for (DataSnapshot ss : snapshot.getChildren()) {
-                        personStatuses.add(Integer.parseInt(ss.getKey()),  (Map<String, Object>) ss.getValue());
+                    for (DataSnapshot userData : snapshot.getChildren()) {
+                        if(userData.getKey() == getString(R.string.firebase_path_location)) {
+                            for (DataSnapshot userLocations : userData.getChildren()) {
+                                personStatuses.add(Integer.parseInt(userLocations.getKey()), (Map<String, Object>) userLocations.getValue());
+                            }
+                        }
                     }
                 }
             }
@@ -203,6 +190,10 @@ public class TrackerService extends Service implements LocationListener {
             }
         });
 
+        LocationRequest request = new LocationRequest();
+        //Specify how often your app should request the device’s location//
+        request.setInterval(remoteConfig.getLong("LOCATION_REQUEST_INTERVAL"));
+        request.setFastestInterval(remoteConfig.getLong("LOCATION_REQUEST_INTERVAL_FASTEST"));
         //Get the most accurate location data available//
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(this);
@@ -212,31 +203,68 @@ public class TrackerService extends Service implements LocationListener {
         if (permission == PackageManager.PERMISSION_GRANTED) {
             //...then request location updates//
             setStatusMessage(R.string.tracking);
+
+            // Hold a partial wake lock to keep CPU awake when the we're tracking location.
+            PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+                       mWakelock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "myapp:MyWakelockTag");
+            mWakelock.acquire();
+
             client.requestLocationUpdates(request, new LocationCallback() {
                 @Override
                 public void onLocationResult(LocationResult locationResult) {
                     //Get a reference to the database, so your app can perform read and write operations//
                     Location location = locationResult.getLastLocation();
-
                     if (location != null) {
-                        //Save the location data to the database//
-                        Map<String, Object> personStatus = new HashMap<>();
-                        personStatus.put("latitude", location.getLatitude());
-                        personStatus.put("longitude", location.getLongitude());
-                        personStatus.put("time", new Date().getTime());
-
-                        //Map<String, Object> status = personStatuses.get(0);
-                        //personStatus.put("plat", status.get("lat"));
-                        //personStatus.put("plng", status.get("lng"));
-                        //personStatus.put("ptime", status.get("time"));
-
-                        //personStatuses.set(0, personStatus);
-                        //dbRef.child(token).setValue(personStatus);
-                        dbRef.child("0").setValue(personStatus);
+                        onLocationChanged(location);
                     }
                 }
             }, null);
         }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        Log.i(TAG, "onLocationChanged: ");
+
+        //Save the location data to the database//
+        Map<String, Object> personStatus = new HashMap<>();
+        personStatus.put("latitude", location.getLatitude());
+        personStatus.put("longitude", location.getLongitude());
+        personStatus.put("altitude", location.getAltitude());
+        personStatus.put("time", new Date().getTime());
+
+        //final long expiry = prefs.getLong(getString(R.string.v_expiry), 0);
+        //personStatus.put("expTime", expiry);
+
+        if (locationIsAtStatus(location, 1) && locationIsAtStatus(location, 0)) {
+            // If the most recent two statuses are approximately at the same
+            // location as the new current location, rather than adding the new
+            // location, we update the latest status with the current. Two statuses
+            // are kept when the locations are the same, the earlier representing
+            // the time the location was arrived at, and the latest representing the
+            // current time.
+            personStatuses.set(0, personStatus);
+            // Only need to update 0th status, so we can save bandwidth.
+            dbRef.child(getString(R.string.firebase_path_location)).child("0").setValue(personStatus);
+        } else {
+            // Maintain a fixed number of previous statuses.
+            while (personStatuses.size() >= remoteConfig.getLong("MAX_STATUSES")) {
+                personStatuses.removeLast();
+            }
+            personStatuses.addFirst(personStatus);
+            // We push the entire list at once since each key/index changes, to
+            // minimize network requests.
+            dbRef.child(getString(R.string.firebase_path_location)).setValue(personStatuses);
+        }
+
+        if (BuildConfig.DEBUG) {
+            //logStatusToStorage(personStatus);
+        }
+
+        NetworkInfo info = ((ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE))
+                .getActiveNetworkInfo();
+        boolean connected = info != null && info.isConnectedOrConnecting();
+        setStatusMessage(connected ? R.string.tracking : R.string.not_tracking);
     }
 
     private void buildNotification() {
@@ -269,11 +297,11 @@ public class TrackerService extends Service implements LocationListener {
     }
 
     /**
-     * Sets the current status message (connecting/tracking/not tracking).
+     * Sets the current status message (tracking/not tracking).
      */
     private void setStatusMessage(int stringId) {
         mNotificationBuilder.setContentText(getString(stringId));
-        mNotificationManager.notify(NOTIFICATION_ID++, mNotificationBuilder.build());
+        mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 
         // Also display the status message in the activity.
         Intent intent = new Intent(STATUS_INTENT);
