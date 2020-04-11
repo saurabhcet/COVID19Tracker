@@ -74,21 +74,20 @@ public class StaticData {
 
     public static HashMap<String, String> getFAQ() {
         HashMap<String, String> faq = new HashMap<>();
-        faq.put("<Q> How this App can help you ?", "Constant Notification of COVID Suspect near your area and to spread awareness in community");
-        faq.put("<Q> Is this App access my personal data ?", "No, only location if you register in any suspected category.");
-        faq.put("<Q> I am not COVID suspected person why would I use this App?", "");
-        faq.put("<Q> I am a COVID suspected person, is this App going to store my personal information ?", "No, only if you register as a COVID detected your location will be shared if asked for Govt. authorities.");
-        faq.put("<Q> When I am trying to register as a suspected person, why this App asking my location ?", "");
-        faq.put("<Q> I am general user, why the App is asking me region ?", "We don't want to spread panic, maps data will be available to area you live in.");
-        faq.put("<Q> Is my personal information displayed on the map ?", "No.");
-        faq.put("<Q> What is Virtual ID ?", "VID is a 16 digit number to uniquely tag COVID suspected members.");
-        faq.put("<Q> What are the meaning of various COVID suspected categories ?", "");
-        faq.put("<Q> I am COVID suspected or detected person, how can i register myself ?", "In the right-bottom of App main screen you will see a floating button, click on that and register.");
-        faq.put("<Q> Is my personal information(ie. contacts) be revealed through this App ?", "No");
-        faq.put("<Q> Is this Govt. approved App, if not can I contribute on the development ?", "No, it is a community developed application just to keep you safe and to spread awareness.");
-        faq.put("<Q> If I am a COVID suspected person till how many days my location will be tracked ?", "As per your advised quarantine days.");
-        faq.put("<Q> Can I register multiple person in this App ?", "Yes upto 3 person max, but we would suggest you to individually to every device.");
-        faq.put("<Q> Is this a commercial App ?", "No, and its completely Ads free.");
+        faq.put("Q) How this App can help you?", "A) This App provides constant Notification of COVID suspect near to your area and at the same time spread awareness in community.");
+        faq.put("Q) Will this App access my personal information?", "A) No, only location will be tracked if you register in suspected category.");
+        faq.put("Q) I am not a COVID suspect, why would I use this App?", "A) You can use this App to be aware of any suspect is there near your area.");
+        faq.put("Q) I am a COVID detected person, will this App going to store my personal information?", "A) No, only if you register as a COVID detected person your current location will be tracked.");
+        faq.put("Q) I am general user, why this App is asking my region?", "A) We don't want to create panic, the heat-maps will be available to the area you live in.");
+        faq.put("Q) Will my personal information be displayed on map?", "A) No personal information will be displayed on the map.");
+        faq.put("Q) What is Virtual ID?", "A) VID is just a 16 digit number to create a unique identity.");
+        faq.put("Q) What are the various COVID suspected categories ?", "A) 1) Detected 2) Suspected – Carrier 3) Suspected - Community Transmission 4) Suspected - Indirect Transmission 5) Recovered.");
+        faq.put("Q) I am COVID suspected or detected person, how can I register myself?", "A) In the bottom-right of the App window a floating icon is available, click on it & register.");
+        faq.put("Q) Will my Phone-book detail be revealed through this App?", "A) No Phone-book details will be revealed.");
+        faq.put("Q) Is this Govt. authorised App, if not can I contribute?", "it is community developed App not Govt. approved App, just to create awareness & to keep you safe. Yes you can contribute to the App by reaching us through About us section.");
+        faq.put("Q) If I am suspected person, till how many days my location be tracked?", "A) No, the location will be tracked as per advised quarantine days.");
+        faq.put("Q) Can I register multiple person in this App?", "A) Yes, upto 3 person can be registered, but we would suggest you to register one person in every device.");
+        faq.put("Q) Is this a commercial App?", "A) No, it is completely Ads free App.");
 
         return faq;
     }

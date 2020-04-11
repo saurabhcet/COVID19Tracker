@@ -31,6 +31,10 @@ public class LocationActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(layout.activity_location);
+        // Back button
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         prefs = getSharedPreferences(getString(string.prefs), MODE_PRIVATE);
         stateSpinner = findViewById(id.state);

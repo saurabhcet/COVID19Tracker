@@ -31,7 +31,7 @@
         <service
             android:name=".TrackerService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -51,13 +51,18 @@
         <activity
             android:name=".MapsActivity"
             android:label="@string/title_activity_maps">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".TagActivity" android:label="Tag Me" />
+
+        <activity android:name=".TagActivity" android:label="Tag Me" android:parentActivityName=".MapsActivity" />
+        <activity android:name=".LocationActivity" android:label="Save Region" android:parentActivityName=".MapsActivity" />
+        <activity android:name=".FAQActivity" android:label="FAQ" android:parentActivityName=".MapsActivity" />
+        <activity android:name=".AboutActivity" android:label="About Us" android:parentActivityName=".MapsActivity" />
         <receiver
             android:name="com.covid.covidtracker.TrackerBroadcastReceiver"
             android:enabled="true"
@@ -73,5 +78,4 @@
             </intent-filter>
         </receiver>
     </application>
-
 </manifest>

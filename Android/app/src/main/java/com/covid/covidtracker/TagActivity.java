@@ -75,6 +75,10 @@ public class TagActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(layout.activity_tag);
+        // Back button
+        if (getSupportActionBar() != null){
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
         final long tmpToken = getVirtualToken();
         prefs = getSharedPreferences(getString(string.prefs), MODE_PRIVATE);
@@ -212,6 +216,7 @@ public class TagActivity extends AppCompatActivity {
         return false;
     }
 
+    //TODO: Remove if not required
     private void setTrackingStatus(int status) {
         boolean tracking = status == string.tracking;
         covidCodeSpinner.setEnabled(!tracking);
