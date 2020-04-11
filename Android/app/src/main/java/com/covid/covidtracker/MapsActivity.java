@@ -8,12 +8,12 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -48,20 +48,13 @@ import com.google.maps.android.heatmaps.Gradient;
 import com.google.maps.android.heatmaps.HeatmapTileProvider;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import mehdi.sakout.aboutpage.AboutPage;
-import mehdi.sakout.aboutpage.Element;
 
 public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
     private static final String TAG = TrackerService.class.getSimpleName();
     private static final int MAX_USER = 3;
     private static final int PIN_LEN = 6;
     private static final int STATE_CODE_LEN = 2;
-    private static final String MAP_TYPE = "HMAP";
     private GoogleMap map;
     private Location deviceLocation;
     private SharedPreferences prefs;
@@ -70,15 +63,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 final String savedToken = prefs.getString(getString(R.string.v_token), "");
                 final int registeredCount = prefs.getInt(getString(R.string.v_registered), 0);
-                if(savedToken == "" || registeredCount < MAX_USER) {
-                    Intent intent = new Intent(MapsActivity.this, TagActivity.class);
-                    startActivity(intent);
+                if(savedToken.isEmpty() || registeredCount < MAX_USER) {
+                    startActivity(new Intent(MapsActivity.this, TagActivity.class));
                     showRegistered("Registered successfully");
                 }
                 else {
@@ -101,89 +94,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public boolean onSupportNavigateUp() {
-        onBackPressed();
-        return true;
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return super.onCreateOptionsMenu(menu) ;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch(item.getItemId()) {
-            case R.id.action_location:
-                showLocationActivity();
-		return super.onOptionsItemSelected(item);                
-            case R.id.action_faq:
-                startFaqActivity();
-		return true;
-            case R.id.action_about:
-                startAboutActivity();
-		return true;
-            //case R.id.action_credit: // Future development
-            //  startCreditActivity();
-            //  break;
-            default:
-		return super.onOptionsItemSelected(item);
-        }         
-    }
-
-    private void showLocationActivity() {
-        startActivity(new Intent(this, LocationActivity.class));
-    }
-
-    private void startFaqActivity() {
-       HashMap<String, String> faqs = StaticData.getFAQ();
-        AboutPage faq = new AboutPage(this)
-                                .isRTL(false)
-                                .setDescription("FAQ");
-       for(Map.Entry<String, String> map: faqs.entrySet()) {
-           //faq.addItem(new Element().setTitle(map.getKey()).setValue(map.getValue()));
-           faq.addGroup(map.getKey());
-           faq.addItem(new Element().setTitle(map.getValue()));
-        }
-        View view = faq.create();
-        setContentView(view);
-    }
-
-    private void startAboutActivity() {
-        View aboutPage = new AboutPage(this)
-                .isRTL(false)
-                .setImage(R.drawable.ic_launcher_background)
-                .setDescription("COVID19 Tracker")
-                .addItem(new Element().setTitle("Version 1.0"))
-                .addGroup("Connect with us")
-                .addFacebook("facebook.com")
-                .addTwitter("saurabhcetb")
-                .addGitHub("saurabhcet/COVID19Tracker")
-                .addPlayStore("com.covid.covidtracker")
-                .addItem(createCopyright())
-                .create();
-        setContentView(aboutPage);
-    }
-
-    private Element createCopyright() {
-        Element copyright = new Element();
-        copyright.setTitle(String.format("Copyright %d ", Calendar.getInstance().get(Calendar.YEAR)));
-        copyright.setIconDrawable(R.drawable.ic_launcher_background);
-        copyright.setGravity(Gravity.CENTER);
-        return copyright;
-    }
-
-    private void stopLocationService() {
-       // stopService(new Intent(this, TrackerService.class));
-    }
-
-    private void showRegistered(String msg) {
-        Snackbar snackbar = Snackbar
-                .make(findViewById(R.id.tagView), msg, Snackbar.LENGTH_LONG);
-        // Changing message text color
-        snackbar.setActionTextColor(Color.GREEN);
-        snackbar.show();
+    protected void onPause() {
+        super.onPause();
     }
 
     /**
@@ -203,15 +120,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .addOnCompleteListener(new OnCompleteListener<AuthResult>(){
                     @Override
                     public void onComplete(Task<AuthResult> task) {
-                        Log.i(TAG, "authenticate: " + task.isSuccessful());
+                        //Log.i(TAG, "authenticate: " + task.isSuccessful());
                         if (task.isSuccessful()) {
                             final String state = prefs.getString(getString(R.string.v_state), "");
                             final String pin = prefs.getString(getString(R.string.v_pin), "");
                             if(state.length() == STATE_CODE_LEN && pin.length() == PIN_LEN) {
-                                if(MAP_TYPE == "USER")
-                                  showUserMarkers(state, pin);
-                                else
-                                  showHeatMaps(state, pin);
+                                    //showUserMarkers(state, pin);
+                                    showHeatMaps(state, pin);
                             }
                         } else {
                             Toast.makeText(MapsActivity.this, R.string.auth_failed,
@@ -221,7 +136,50 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 });
     }
 
-    // Refresh map with super.onResume();
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return super.onCreateOptionsMenu(menu) ;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_location:
+                showLocationActivity();
+		        return true;
+            case R.id.action_faq:
+                startActivity(new Intent(this, FAQActivity.class));
+		        return true;
+            case R.id.action_about:
+                startActivity(new Intent(this, AboutActivity.class));
+		        return true;
+            //case R.id.action_credit: // Future development
+            //  startCreditActivity();
+            //  break;
+            default:
+		        return super.onOptionsItemSelected(item);
+        }         
+    }
+
+    private void showLocationActivity() {
+        startActivity(new Intent(this, LocationActivity.class));
+    }
+
+    private void showRegistered(String msg) {
+        Snackbar snackbar = Snackbar
+                .make(findViewById(R.id.tagView), msg, Snackbar.LENGTH_LONG);
+        // Changing message text color
+        snackbar.setActionTextColor(Color.GREEN);
+        snackbar.show();
+    }
+
     private void showUserMarkers(String state, String pin) {
        // final String token = prefs.getString(getString(R.string.v_token), "");
         // Write a message to the database
@@ -237,8 +195,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
                 /* Data points defined as a mixture of WeightedLocation and LatLng objects */
-                //addHeatMap(dataSnapshot);
-                ArrayList<LatLng> list = new ArrayList<LatLng>();
+
                 for(DataSnapshot userData: dataSnapshot.getChildren()) {
                     for(DataSnapshot snapshot: userData.getChildren()){
                         String key = snapshot.getKey();
@@ -269,18 +226,17 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                             new MarkerOptions()
                                                     .position(latLng)
                                                     .title(pin));
-                                    map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+                                    //map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
                                 }
                             }
                         }
                     }
                 }
-                map.animateCamera( CameraUpdateFactory.zoomTo( 10.0f ));
                 addCircleToUserLocation();
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
+            public void onCancelled(@NonNull DatabaseError error) {
                 // Failed to read value
                 Log.w(TAG, "Failed to read value.", error.toException());
             }
@@ -297,12 +253,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Read from the database
         myRef.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 // This method is called once with the initial value and again
                 // whenever data at this location is updated.
                 /* Data points defined as a mixture of WeightedLocation and LatLng objects */
                 //addHeatMap(dataSnapshot);
-                ArrayList<LatLng> mapData = new ArrayList<LatLng>();
+                ArrayList<LatLng> mapData = new ArrayList<>();
                 for(DataSnapshot userData: dataSnapshot.getChildren()) {
                     for(DataSnapshot snapshot: userData.getChildren()){
                         String key = snapshot.getKey();
@@ -342,7 +298,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 };
 
                 float[] startPoints = {
-                        0.70f
+                        0.80f
                 };
 
                 Gradient gradient = new Gradient(colors, startPoints);
@@ -351,15 +307,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         .data(mapData)
                         .gradient(gradient)
                         .build();
+                mProvider.setRadius(HeatmapTileProvider.DEFAULT_RADIUS);
                 // Add a tile overlay to the map, using the heat map tile provider.
                 TileOverlay mOverlay = map.addTileOverlay(new TileOverlayOptions().tileProvider(mProvider));
-
-                map.animateCamera( CameraUpdateFactory.zoomTo( 10.0f ));
                 addCircleToUserLocation();
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
+            public void onCancelled(@NonNull DatabaseError error) {
                 // Failed to read value
                 Log.w(TAG, "Failed to read value.", error.toException());
             }
@@ -395,13 +350,14 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
             locationB.setLatitude(latitude);
             locationB.setLongitude(longitude);
             float distance = deviceLocation.distanceTo(locationB);
-            if (distance < 500) {
+            if (distance < 500 && findViewById(R.id.mapView) != null) {
                 Snackbar snackbar = Snackbar
                         .make(findViewById(R.id.mapView),
-                                title + " is " + Math.round(distance) + " m away", Snackbar.LENGTH_LONG);
+                                "A suspected person from Pin Code: " + title + " is " + Math.round(distance) + " m away", Snackbar.LENGTH_LONG);
 
                 // Changing message text color
                 snackbar.setActionTextColor(Color.RED);
+                snackbar.setAction("Action", null);
                 snackbar.show();
             }
         }
@@ -416,97 +372,12 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .radius(3000)
                     .strokeColor(Color.rgb(93, 173, 226))
                     .fillColor(Color.rgb(174, 214, 241)));
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(deviceLocation.getLatitude(), deviceLocation.getLongitude()), 6));
         }
-    }
-
-    private void showUsersOld()   {
-        // Write a message to the database
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference myRef = database.getReference("locations");
-        getDeviceLocation();
-        // Read from the database
-        myRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // This method is called once with the initial value and again
-                // whenever data at this location is updated.
-                for(DataSnapshot ss: dataSnapshot.getChildren()) {
-                    String[] key = ss.getKey().split("-");
-                    String covid = key[0];
-                    String state = key[1];
-                    String pin = key[2];
-                    String title = key[3].substring(0,4) + "-XXXX-XXXX-" + key[3].substring(12,16);
-                    String lat = ss.child("0").child("latitude").getValue().toString();
-                    String lng = ss.child("0").child("longitude").getValue().toString();
-                    double latitude = Double.parseDouble(lat);
-                    double longitude = Double.parseDouble(lng);
-
-                    BitmapDescriptor icon;
-                    // switch statement for covid type
-                    switch (covid) {
-                        case "CR":
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED);
-                            break;
-                        case "CO":
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE);
-                            break;
-                        case "CY":
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW);
-                            break;
-                        case "CG":
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN);
-                            break;
-                        default:
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE);
-                            break;
-                    }
-                    String snippet =  state + ": " +  pin;
-                    if(deviceLocation != null) {
-                        Location locationB = new Location("Location B");
-                        locationB.setLatitude(latitude);
-                        locationB.setLongitude(longitude);
-                        float distance = deviceLocation.distanceTo(locationB);
-                        if (distance < 500) {
-                            Snackbar snackbar = Snackbar
-                                    .make(findViewById(R.id.mapView),
-                                            title + " is " + Math.round(distance) + " m away", Snackbar.LENGTH_LONG);
-
-                            // Changing message text color
-                            snackbar.setActionTextColor(Color.RED);
-                            snackbar.show();
-                        }
-                        snippet = snippet + ", " + Math.round(distance) + " m away";
-                    }
-
-                    // Add a marker and move the camera
-                    LatLng latLng = new LatLng(latitude, longitude);
-                    map.addMarker(
-                            new MarkerOptions()
-                                    .position(latLng)
-                                    .title(title)
-                                    .snippet(snippet)
-                                    .icon(icon));
-                    map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-                }
-                map.animateCamera( CameraUpdateFactory.zoomTo( 10.0f ));
-                if(deviceLocation != null) {
-                    //SELF LOCATION
-                    //GET NOTIFICATION
-                    map.addCircle(new CircleOptions()
-                            .center(new LatLng(deviceLocation.getLatitude(), deviceLocation.getLongitude()))
-                            .radius(10000)
-                            .strokeColor(Color.rgb(93, 173, 226))
-                            .fillColor(Color.rgb(174, 214, 241)));
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                // Failed to read value
-                Log.w(TAG, "Failed to read value.", error.toException());
-            }
-        });
+        else {
+            // default location 19.10, 72.88
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(19.10, 72.88), 6));
+        }
     }
 
     private void getDeviceLocation() {
