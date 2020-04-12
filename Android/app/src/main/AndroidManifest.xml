@@ -10,7 +10,6 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
@@ -64,17 +63,17 @@
         <activity android:name=".FAQActivity" android:label="FAQ" android:parentActivityName=".MapsActivity" />
         <activity android:name=".AboutActivity" android:label="About Us" android:parentActivityName=".MapsActivity" />
         <receiver
-            android:name="com.covid.covidtracker.TrackerBroadcastReceiver"
+            android:name=".TrackerBroadcastReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
             <intent-filter>
-                <action android:name=".TrackerActivity.ALARM_ACTION_START"/>
+                <action android:name=".MapsActivity.ALARM_ACTION_START"/>
             </intent-filter>
             <intent-filter>
-                <action android:name=".TrackerActivity.ALARM_ACTION_END"/>
+                <action android:name=".MapsActivity.ALARM_ACTION_END"/>
             </intent-filter>
         </receiver>
     </application>

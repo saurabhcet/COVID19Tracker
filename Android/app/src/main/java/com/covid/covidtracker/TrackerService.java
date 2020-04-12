@@ -3,6 +3,7 @@ package com.covid.covidtracker;
 import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -55,6 +56,7 @@ public class TrackerService extends Service implements LocationListener {
     public static final String STATUS_INTENT = "status";
     public static final String CHANNEL_ID = "1";
     private static int NOTIFICATION_ID = 1;
+    private static final int FOREGROUND_SERVICE_ID = 1;
     private static final int CONFIG_CACHE_EXPIRY = 600;  // 10 minutes.
     private DatabaseReference dbRef;
     private FirebaseRemoteConfig remoteConfig;
@@ -101,17 +103,17 @@ public class TrackerService extends Service implements LocationListener {
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
-        Log.i(TAG, "onStatusChanged: ");
+        //Log.i(TAG, "onStatusChanged: ");
     }
 
     @Override
     public void onProviderEnabled(String provider) {
-        Log.i(TAG, "onProviderEnabled: ");
+        //Log.i(TAG, "onProviderEnabled: ");
     }
 
     @Override
     public void onProviderDisabled(String provider) {
-        Log.i(TAG, "onProviderDisabled: ");
+       //Log.i(TAG, "onProviderDisabled: ");
     }
 
     private void authenticate(String email, String password) {
@@ -270,15 +272,18 @@ public class TrackerService extends Service implements LocationListener {
 
     private void buildNotification() {
         createNotificationChannel();
+        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0,
+                new Intent(this, MapsActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
         mNotificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.track)
                 .setContentTitle("COVID19 Notification")
-                .setContentText("Tracking Enabled")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-                //.setOngoing(true);
+                .setContentText(getString(R.string.tracking))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOngoing(true);
 
         // notificationId is a unique int for each notification that you must define
         mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
+        startForeground(FOREGROUND_SERVICE_ID, mNotificationBuilder.build());
     }
 
     private void createNotificationChannel() {
@@ -305,7 +310,6 @@ public class TrackerService extends Service implements LocationListener {
         mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 
         // Also display the status message in the activity.
-        // Future Release
         Intent intent = new Intent(STATUS_INTENT);
         intent.putExtra(getString(R.string.status), stringId);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
