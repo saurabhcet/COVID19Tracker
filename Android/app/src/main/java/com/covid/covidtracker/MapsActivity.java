@@ -1,21 +1,34 @@
 package com.covid.covidtracker;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.ActivityManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.location.LocationManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -39,6 +52,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -55,21 +69,27 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final int MAX_USER = 3;
     private static final int PIN_LEN = 6;
     private static final int STATE_CODE_LEN = 2;
+    private static final int PERMISSIONS_REQUEST = 1;
+    private static String[] PERMISSIONS_REQUIRED = new String[]{
+            Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE};
     private GoogleMap map;
     private Location deviceLocation;
     private SharedPreferences prefs;
+    private Snackbar snackbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
+        prefs = getSharedPreferences(getString(R.string.prefs), MODE_PRIVATE);
+        final String savedToken = prefs.getString(getString(R.string.v_token), "");
+        final int registeredCount = prefs.getInt(getString(R.string.v_registered), 0);
+
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                final String savedToken = prefs.getString(getString(R.string.v_token), "");
-                final int registeredCount = prefs.getInt(getString(R.string.v_registered), 0);
                 if(savedToken.isEmpty() || registeredCount < MAX_USER) {
                     startActivity(new Intent(MapsActivity.this, TagActivity.class));
                     showRegistered("Registered successfully");
@@ -85,21 +105,124 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.mapView);
         mapFragment.getMapAsync(this);
 
-        prefs = getSharedPreferences(getString(R.string.prefs), MODE_PRIVATE);
         final String state = prefs.getString(getString(R.string.v_cstate), "");
         final String pin = prefs.getString(getString(R.string.v_cpin), "");
         if(state.length() == 0 || pin.length() == 0) {
             showLocationActivity();
         }
+
+        if (isServiceRunning(TrackerService.class)) {
+            // If service already running, simply update UI.
+        } else if (savedToken.length() > 0) {
+            // Inputs have previously been stored, start validation.
+            checkLocationPermission();
+        }
+    }
+
+    private boolean isServiceRunning(Class<?> serviceClass) {
+        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.getName().equals(service.service.getClassName())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Second validation check - ensures the app has location permissions, and
+     * if not, requests them, otherwise runs the next check.
+     */
+    private void checkLocationPermission() {
+        int locationPermission = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+        int storagePermission = ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (locationPermission != PackageManager.PERMISSION_GRANTED
+                || storagePermission != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, PERMISSIONS_REQUIRED, PERMISSIONS_REQUEST);
+        } else {
+            checkGpsEnabled();
+        }
+    }
+
+    /**
+     * Third and final validation check - ensures GPS is enabled, and if not, prompts to
+     * enable it, otherwise all checks pass so start the location tracking service.
+     */
+    private void checkGpsEnabled() {
+        LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+            showGpsError();
+        } else {
+            resolveGpsError();
+            startLocationService();
+        }
+    }
+
+    private void startLocationService() {
+        // Before we start the service, confirm that we have extra power usage privileges.
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        Intent intent = new Intent();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            }
+        }
+
+        startService(new Intent(this, TrackerService.class));
+    }
+
+    private void showGpsError() {
+        snackbar = Snackbar
+                .make(findViewById(R.id.mapView), getString(R.string
+                        .gps_required), Snackbar.LENGTH_INDEFINITE)
+                .setAction(R.string.enable, new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+                    }
+                });
+
+        // Changing message text color
+        snackbar.setActionTextColor(Color.RED);
+        snackbar.show();
+    }
+
+    private void resolveGpsError() {
+        if (snackbar != null) {
+            snackbar.dismiss();
+            snackbar = null;
+        }
+    }
+
+    /**
+     * Receives status messages from the tracking service.
+     */
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            setTrackingStatus(intent.getIntExtra(getString(R.string.status), 0));
+        }
+    };
+
+    private void setTrackingStatus(int status) {
+        boolean tracking = status == R.string.tracking;
+       // ((TextView) findViewById(mapView)).setText(getString(status));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter(TrackerService.STATUS_INTENT));
     }
 
     @Override
     protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mMessageReceiver);
         super.onPause();
     }
 
@@ -125,8 +248,11 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                             final String state = prefs.getString(getString(R.string.v_state), "");
                             final String pin = prefs.getString(getString(R.string.v_pin), "");
                             if(state.length() == STATE_CODE_LEN && pin.length() == PIN_LEN) {
-                                    //showUserMarkers(state, pin);
-                                    showHeatMaps(state, pin);
+                                FirebaseUser user = authResult.getCurrentUser();
+                                String userUid = user.getUid();
+
+                                //showUserMarkers(state, pin);
+                                showHeatMaps(userUid, state, pin);
                             }
                         } else {
                             Toast.makeText(MapsActivity.this, R.string.auth_failed,
@@ -180,13 +306,15 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         snackbar.show();
     }
 
-    private void showUserMarkers(String state, String pin) {
+    private void showUserMarkers(String userUid, String state, String pin) {
        // final String token = prefs.getString(getString(R.string.v_token), "");
         // Write a message to the database
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final String path = getString(R.string.firebase_path) + state + "/" + pin + "/";
+        final String path = userUid + "/" + getString(R.string.firebase_path) + state + "/" + pin + "/";
         DatabaseReference myRef = database.getReference(path);
         getDeviceLocation();
+
+        final String savedToken = prefs.getString(getString(R.string.v_token), "");
 
         // Read from the database
         myRef.addValueEventListener(new ValueEventListener() {
@@ -197,6 +325,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 /* Data points defined as a mixture of WeightedLocation and LatLng objects */
 
                 for(DataSnapshot userData: dataSnapshot.getChildren()) {
+
+                    //Ignore sending notification to device for user's registered persons
+                    String userToken = userData.getKey();
+                    boolean devicesRegisteredLoction = false;
+                    if (userToken.equals(savedToken)){
+                        devicesRegisteredLoction = true;
+                    }
                     for(DataSnapshot snapshot: userData.getChildren()){
                         String key = snapshot.getKey();
                         String registration = getString(R.string.firebase_path_registration);
@@ -216,7 +351,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                     String pin = registrations.child("pin").getValue().toString();
 
                                     //Send notification once
-                                    if(++notificationCnt ==1) {
+                                    if(++notificationCnt ==1 && !devicesRegisteredLoction) {
                                         sendNotificationToUser(pin, latitude, longitude);
                                     }
 
@@ -243,12 +378,13 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
     }
 
-    private void showHeatMaps(String state, String pin) {
+    private void showHeatMaps(String userUid, String state, String pin) {
         // Write a message to the database
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        final String path = getString(R.string.firebase_path) + state + "/" + pin + "/";
+        final String path = userUid + "/" + getString(R.string.firebase_path) + state + "/" + pin + "/";
         DatabaseReference myRef = database.getReference(path);
         getDeviceLocation();
+        final String savedToken = prefs.getString(getString(R.string.v_token), "");
 
         // Read from the database
         myRef.addValueEventListener(new ValueEventListener() {
@@ -260,6 +396,16 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                 //addHeatMap(dataSnapshot);
                 ArrayList<LatLng> mapData = new ArrayList<>();
                 for(DataSnapshot userData: dataSnapshot.getChildren()) {
+
+                    //Ignore sending notification to device for user's registered persons
+                    String userToken = userData.getKey();
+                    boolean devicesRegisteredLoction = false;
+                    if (userToken.equals(savedToken)){
+                        devicesRegisteredLoction = true;
+                    }
+
+                    //TODO: Future Development -Stop the Service if expTime is expired
+
                     for(DataSnapshot snapshot: userData.getChildren()){
                         String key = snapshot.getKey();
                         String registration = getString(R.string.firebase_path_registration);
@@ -267,7 +413,6 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if(key.equals(registration)) {
                             double latitude = Double.parseDouble(userData.child(location).child("0").child("latitude").getValue().toString());
                             double longitude = Double.parseDouble(userData.child(location).child("0").child("longitude").getValue().toString());
-
 
                             // Send notification to user and add data points
                             int notificationCnt = 0;
@@ -280,7 +425,7 @@ public class MapsActivity extends AppCompatActivity implements OnMapReadyCallbac
                                     String pin = registrations.child("pin").getValue().toString();
 
                                     //Send notification once
-                                    if(++notificationCnt == 1) {
+                                    if(++notificationCnt == 1 && !devicesRegisteredLoction) {
                                         sendNotificationToUser(pin, latitude, longitude);
                                     }
 

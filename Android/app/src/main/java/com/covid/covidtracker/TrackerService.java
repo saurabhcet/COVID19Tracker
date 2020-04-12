@@ -35,6 +35,7 @@ import com.google.firebase.BuildConfig;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -122,9 +123,9 @@ public class TrackerService extends Service implements LocationListener {
                         Log.i(TAG, "authenticate: " + task.isSuccessful());
                         if (task.isSuccessful()) {
                             fetchRemoteConfig();
-                            //FirebaseUser user = mAuth.getCurrentUser();
-                            //String uid = user.getUid();
-                            loadPreviousStatuses();
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            String userUid = user.getUid();
+                            loadPreviousStatuses(userUid);
                         } else {
                             Toast.makeText(TrackerService.this, R.string.auth_failed, Toast.LENGTH_SHORT).show();
                             stopSelf();
@@ -148,14 +149,14 @@ public class TrackerService extends Service implements LocationListener {
      * Loads previously stored statuses from Firebase, and once retrieved,
      * start location tracking.
      */
-    private void loadPreviousStatuses() {
+    private void loadPreviousStatuses(String userUid) {
         final String token = prefs.getString(getString(R.string.v_token), "");
         final String state = prefs.getString(getString(R.string.v_state), "");
         final String pin = prefs.getString(getString(R.string.v_pin), "");
         final long expiry = prefs.getLong(getString(R.string.v_expiry), 0);
         final int registrationCnt = prefs.getInt(getString(R.string.v_registered), 0);
 
-        final String path = getString(R.string.firebase_path) + state + "/" + pin + "/" + token;
+        final String path = userUid + "/" + getString(R.string.firebase_path) + state + "/" + pin + "/" + token;
 
         FirebaseAnalytics.getInstance(this).setUserProperty("COVIDDetection", token);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -273,8 +274,8 @@ public class TrackerService extends Service implements LocationListener {
                 .setSmallIcon(R.drawable.track)
                 .setContentTitle("COVID19 Notification")
                 .setContentText("Tracking Enabled")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setOngoing(true);
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                //.setOngoing(true);
 
         // notificationId is a unique int for each notification that you must define
         mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
@@ -284,8 +285,8 @@ public class TrackerService extends Service implements LocationListener {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "notification";//getString(R.string.channel_name);
-            String description = "notification";//getString(R.string.channel_description);
+            CharSequence name = getString(R.string.channel_name);
+            String description = getString(R.string.channel_description);
             int importance = NotificationManager.IMPORTANCE_DEFAULT;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
@@ -304,6 +305,7 @@ public class TrackerService extends Service implements LocationListener {
         mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build());
 
         // Also display the status message in the activity.
+        // Future Release
         Intent intent = new Intent(STATUS_INTENT);
         intent.putExtra(getString(R.string.status), stringId);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);

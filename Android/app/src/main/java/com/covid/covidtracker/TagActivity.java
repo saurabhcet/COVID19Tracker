@@ -33,6 +33,7 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -151,13 +152,10 @@ public class TagActivity extends AppCompatActivity {
 
             String vToken = prefs.getString(getString(string.v_token), "");
             if (isServiceRunning(TrackerService.class)) {
-                // If service already running, simply update UI.
-                setTrackingStatus(string.tracking);
+                // If service already running, simply ignore.
             } else if (vToken.length() > 0) {
                 // Inputs have previously been stored, start validation.
                 checkLocationPermission();
-            } else {
-                // App is first time running
             }
         }
         else {
@@ -173,6 +171,9 @@ public class TagActivity extends AppCompatActivity {
                     public void onComplete(Task<AuthResult> task) {
                         Log.i(TAG, "authenticate: " + task.isSuccessful());
                         if (task.isSuccessful()) {
+                            FirebaseUser user = mAuth.getCurrentUser();
+                            String userUid = user.getUid();
+
                             SharedPreferences.Editor editor = prefs.edit();
                             int registrationCnt = prefs.getInt(getString(string.v_registered), 1) + 1;
                             editor.putInt(getString(string.v_registered), registrationCnt);
@@ -180,8 +181,7 @@ public class TagActivity extends AppCompatActivity {
                             final String token = prefs.getString(getString(R.string.v_token), "");
                             final String state = prefs.getString(getString(R.string.v_state), "");
                             final String pin = prefs.getString(getString(R.string.v_pin), "");
-                            final String path = getString(R.string.firebase_path) + state + "/" + pin + "/" + token;
-
+                            final String path = userUid  + "/" + getString(R.string.firebase_path) + state + "/" + pin + "/" + token;
 
                             FirebaseDatabase database = FirebaseDatabase.getInstance();
                             DatabaseReference myRef = database.getReference(path+ "/" + getString(R.string.firebase_path_registration));
@@ -214,16 +214,6 @@ public class TagActivity extends AppCompatActivity {
             }
         }
         return false;
-    }
-
-    //TODO: Remove if not required
-    private void setTrackingStatus(int status) {
-        boolean tracking = status == string.tracking;
-        covidCodeSpinner.setEnabled(!tracking);
-        stateSpinner.setEnabled(!tracking);
-        pinCodeEditText.setEnabled(!tracking);
-        registerButton.setVisibility(tracking ? View.INVISIBLE : View.VISIBLE);
-        //((TextView) findViewById(tagView)).setText(getString(status));
     }
 
     /**
