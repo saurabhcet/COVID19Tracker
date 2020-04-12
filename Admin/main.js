@@ -16,9 +16,9 @@
  */
 
 var config = {
-  "mapsApiKey": "AIzaSyB6v18mJ0YECGrVArsGslM8kirbZipzVJE",
-  "firebaseApiKey": "99scjXCUEDfFXXxusRM3PoWXGnz2",
-  "firebaseDatabaseURL": "https://covidtracker-aede6.firebaseio.com",
+  "mapsApiKey": "",
+  "firebaseApiKey": "",
+  "firebaseDatabaseURL": "",
 };
 
 var app = firebase.initializeApp({
