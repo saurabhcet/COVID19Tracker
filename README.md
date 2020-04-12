@@ -48,15 +48,21 @@ emergencies.
 
 
 ## Tagging
+
 CR(Code) + MH(State) + 400058(PIN) + 4352 XXXX XXXX 5678 (Virtual Token)
 
 
 ### `Contact`
+
 if you want to contribute please reach out through DM - Twitter -https://twitter.com/saurabhcetb
 
-### TECHNICAL DESIGN 
+
+
+## TECHNICAL DESIGN 
 
 `Link` - https://github.com/saurabhcet/COVID19Tracker/blob/master/FIGHT%20COVID%202019.pdf
+
+
 
 Thanks
 
